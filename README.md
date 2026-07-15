@@ -53,12 +53,14 @@ cd Images-collection-clean
 
 Le programme utilise **uv**, un outil qui installe tout seul Python et
 les bibliothèques nécessaires. Vous n'avez **pas besoin d'installer
-Python vous-même**.
+Python vous-même** : le projet est figé sur la version **Python 3.12**
+(fichier `.python-version` fourni dans le dossier), et uv installera
+exactement cette version, automatiquement, à l'étape 2 ci-dessous.
 
 ### Windows
 
 1. Ouvrez le menu Démarrer, tapez `PowerShell` et ouvrez-le.
-2. Copiez-collez cette commande puis appuyez sur Entrée :
+2. Copiez-collez cette commande puis appuyez sur Entrée (installe `uv`) :
 
    ```powershell
    powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
@@ -74,16 +76,39 @@ Python vous-même**.
 
    Si un numéro de version s'affiche, c'est bon !
 
+5. Installez la version de Python utilisée par le projet (**3.12**) :
+
+   ```powershell
+   uv python install 3.12
+   ```
+
+6. Vérifiez que c'est bien cette version qui sera utilisée :
+
+   ```powershell
+   uv run python --version
+   ```
+
+   Doit afficher `Python 3.12.x`.
+
 ### macOS / Linux
 
 1. Ouvrez le Terminal.
-2. Copiez-collez cette commande puis appuyez sur Entrée :
+2. Copiez-collez cette commande puis appuyez sur Entrée (installe `uv`) :
 
    ```bash
    curl -LsSf https://astral.sh/uv/install.sh | sh
    ```
 
 3. Fermez puis rouvrez le Terminal, et vérifiez avec `uv --version`.
+4. Installez la version de Python utilisée par le projet (**3.12**), puis
+   vérifiez-la :
+
+   ```bash
+   uv python install 3.12
+   uv run python --version
+   ```
+
+   Doit afficher `Python 3.12.x`.
 
 ---
 
