@@ -118,12 +118,26 @@ exactement cette version, automatiquement, à l'étape 2 ci-dessous.
 
 Le dossier du programme est celui qui contient `extract_cards.py`.
 
-- **Windows** : ouvrez ce dossier dans l'Explorateur de fichiers, faites
-  un clic droit dans le vide et choisissez **« Ouvrir dans le
-  Terminal »**. (Ou tapez `cmd` dans la barre d'adresse de l'Explorateur
-  puis Entrée.)
+> ⚠️ **Toutes les commandes ci-dessous doivent être lancées depuis ce
+> dossier.** Si le terminal affiche un autre chemin (par exemple
+> `C:\Users\VotreNom>`), les commandes échoueront (`No such file or
+> directory`). Utilisez la méthode ci-dessous plutôt que de taper `cd`
+> à la main : c'est plus sûr, et ça évite les erreurs si le chemin
+> contient des espaces (ex. « Nouveau dossier »).
+
+- **Windows** : ouvrez ce dossier **précis** dans l'Explorateur de
+  fichiers (double-cliquez pour y entrer, vous devez voir
+  `extract_cards.py` dans la liste), faites un clic droit dans le vide
+  (pas sur un fichier) et choisissez **« Ouvrir dans le Terminal »**.
 - **macOS** : clic droit sur le dossier → **Services** → **Nouveau
   terminal au dossier**.
+
+Si vous préférez taper `cd` vous-même, mettez le chemin entre
+guillemets dès qu'il contient un espace :
+
+```powershell
+cd "C:\Users\VotreNom\Desktop\Nouveau dossier\Images-collection-clean-main"
+```
 
 ### Étape 2 — Mettre vos images dans `input`
 
@@ -167,6 +181,8 @@ Les cartes extraites sont dans le dossier `output`, créé automatiquement.
 | Symptôme | Solution |
 |---|---|
 | `uv : terme non reconnu` / `command not found` | Fermez et rouvrez le terminal après l'installation de uv. |
+| `No such file or directory` / `[Errno 2]` en lançant `extract_cards.py` | Le terminal n'est pas ouvert dans le bon dossier. Vérifiez que la ligne au-dessus de votre curseur montre bien le chemin du dossier contenant `extract_cards.py` (sinon, voir étape 1 de la partie « 3. Utilisation »). |
+| `Set-Location : Impossible de trouver un paramètre positionnel...` (PowerShell, en tapant `cd ...`) | Le chemin contient un espace (ex. « Nouveau dossier ») : mettez-le entre guillemets, ex. `cd "C:\Users\VotreNom\Desktop\Nouveau dossier\..."`. |
 | `Aucune image trouvée dans ...` | Vérifiez que vos images sont bien dans le dossier `input` et au format `.webp`, `.png`, `.jpg`, `.jpeg`, `.bmp` ou `.tif`. |
 | `[ECHEC] Carte non détectée : ...` | La photo est probablement trop sombre, floue ou la carte est coupée. Reprenez une photo bien cadrée, de face, sur fond contrasté. |
 | La carte extraite garde un bord de coque | Relancez avec `uv run python extract_cards.py --debug` : les images dans `output/debug/` montrent le contour détecté en rouge, pratique pour comprendre ce qui se passe. |
