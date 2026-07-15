@@ -1,0 +1,8 @@
+# Environnement Python (géré par uv, recréé automatiquement)
+.venv/
+__pycache__/
+*.pyc
+
+# Vos scans personnels et les cartes extraites : restent en local uniquement
+/input/*
+/output/*
