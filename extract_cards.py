@@ -32,6 +32,14 @@ DETECT_WIDTH = 900
 # Formats d'image acceptés en entrée
 INPUT_EXTENSIONS = {".webp", ".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff"}
 
+# Cadre jaune universel des cartes (Wizards / e-Card / Neo...) : en HSV
+# OpenCV la teinte du jaune Pokémon tourne autour de 20-30, avec une
+# saturation et une luminosité élevées. C'est le repère le plus fiable
+# pour séparer la carte de la coque, y compris quand la carte OU la coque
+# sont grises (ce que la chroma seule ne sait pas faire).
+YELLOW_HUE_MIN, YELLOW_HUE_MAX = 18, 40
+YELLOW_SAT_MIN, YELLOW_VAL_MIN = 70, 90
+
 
 def order_corners(pts: np.ndarray) -> np.ndarray:
     """Ordonne 4 points en [haut-gauche, haut-droit, bas-droit, bas-gauche]."""
@@ -113,6 +121,44 @@ def pick_best_quad(quads: list[np.ndarray]) -> np.ndarray | None:
         return area * (1 - ratio_penalty)
 
     return max(quads, key=score)
+
+
+def yellow_mask(bgr: np.ndarray) -> np.ndarray:
+    """Masque binaire (0/255) des pixels appartenant au cadre jaune."""
+    hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
+    h, s, v = hsv[:, :, 0], hsv[:, :, 1], hsv[:, :, 2]
+    m = (
+        (h >= YELLOW_HUE_MIN)
+        & (h <= YELLOW_HUE_MAX)
+        & (s >= YELLOW_SAT_MIN)
+        & (v >= YELLOW_VAL_MIN)
+    )
+    return m.astype(np.uint8) * 255
+
+
+def detect_yellow_quad(img: np.ndarray) -> np.ndarray | None:
+    """Détecte la carte via le contour extérieur de son cadre jaune.
+
+    Le cadre jaune forme un rectangle fermé : le contour externe de sa
+    plus grande composante épouse le bord extérieur de la carte. C'est
+    robuste même si l'intérieur de la carte (dresseur, énergie, Pokémon
+    clair) ou la coque (slab argenté) sont gris, là où la détection par
+    chroma échoue. Renvoie None si le jaune est trop faible (carte sans
+    cadre jaune classique) : l'appelant bascule alors sur la chroma.
+    """
+    h, w = img.shape[:2]
+    scale = DETECT_WIDTH / w
+    small = cv2.resize(img, (DETECT_WIDTH, int(h * scale)), interpolation=cv2.INTER_AREA)
+    mask = yellow_mask(small)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((9, 9), np.uint8), iterations=2)
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if not contours:
+        return None
+    cnt = max(contours, key=cv2.contourArea)
+    if cv2.contourArea(cnt) < 0.12 * small.shape[0] * small.shape[1]:
+        return None  # cadre jaune trop petit/absent -> repli chroma
+    box = cv2.boxPoints(cv2.minAreaRect(cnt))
+    return order_corners(box) / scale
 
 
 def refine_corners(img: np.ndarray, corners: np.ndarray) -> np.ndarray:
@@ -275,6 +321,123 @@ def snap_edges(img: np.ndarray, corners: np.ndarray) -> np.ndarray:
         corners = back.reshape(4, 2).astype(np.float32)
     return corners
 
+
+# Élargissement de l'aperçu et retrait pour le calage sur le jaune.
+YELLOW_EXPAND = 1.08
+# Retrait vers l'intérieur (px de l'aperçu) appliqué après avoir trouvé le
+# bord extérieur du jaune : le masque a une incertitude de quelques pixels
+# vers l'extérieur (flou, transition coque/jaune), donc on rentre un peu
+# pour ne JAMAIS laisser de liseré de coque. Le cadre jaune faisant 15-30
+# px de large, ce retrait reste invisible.
+YELLOW_INSET = 5
+
+
+def snap_yellow_edges(img: np.ndarray, corners: np.ndarray) -> np.ndarray:
+    """Cale chaque bord sur la frontière extérieure du cadre jaune.
+
+    Même principe que `snap_edges`, mais le signal n'est plus la chroma :
+    c'est directement le masque jaune. Sur un aperçu légèrement élargi,
+    chaque bord est mesuré en plusieurs points (fraction de pixels jaunes
+    en scannant depuis l'extérieur), une droite est ajustée puis décalée
+    vers l'intérieur jusqu'à englober la mesure la plus rentrée (enveloppe :
+    aucune coque au-delà du jaune), un point aberrant isolé étant ignoré
+    (poussière/reflet). Les 4 droites se croisent aux coins corrigés,
+    reprojetés dans l'image d'origine. Deux passes pour converger.
+    """
+    prev_w = DETECT_WIDTH
+    prev_h = int(round(prev_w / CARD_RATIO))
+    dst = np.array(
+        [[0, 0], [prev_w - 1, 0], [prev_w - 1, prev_h - 1], [0, prev_h - 1]],
+        dtype=np.float32,
+    )
+    margin = (1 - 1 / YELLOW_EXPAND) / 2  # position de repli si aucune mesure
+    segments = 8  # mesures par bord
+
+    def first_yellow(profile: np.ndarray, run: int = 3) -> int | None:
+        """Index de la première position ayant `run` pixels jaunes d'affilée
+        (profil binaire, scanné depuis le bord extérieur)."""
+        idx = np.where(profile > 0)[0]
+        if len(idx) == 0:
+            return None
+        for i in idx:
+            if profile[i : i + run].all():
+                return int(i)
+        return int(idx[0])
+
+    for _ in range(2):
+        center = corners.mean(axis=0)
+        expanded = (center + (corners - center) * YELLOW_EXPAND).astype(np.float32)
+        matrix = cv2.getPerspectiveTransform(expanded, dst)
+        preview = cv2.warpPerspective(img, matrix, (prev_w, prev_h), flags=cv2.INTER_AREA)
+        ym = yellow_mask(preview)
+        ym = cv2.morphologyEx(ym, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
+        bx, by = int(0.14 * prev_w), int(0.14 * prev_h)  # zones de recherche
+
+        def edge_line(side: str) -> tuple[float, float]:
+            length = prev_h if side in "LR" else prev_w
+            coords, dists = [], []
+            t0, t1 = 0.16, 0.84  # portion centrale (coins arrondis exclus)
+            for k in range(segments):
+                s0 = int((t0 + (t1 - t0) * k / segments) * length)
+                s1 = int((t0 + (t1 - t0) * (k + 1) / segments) * length)
+                span = slice(s0, s1)
+                if side == "L":
+                    prof = (ym[span, :bx] > 0).mean(axis=0)
+                elif side == "R":
+                    prof = (ym[span, prev_w - bx :] > 0).mean(axis=0)[::-1]
+                elif side == "T":
+                    prof = (ym[:by, span] > 0).mean(axis=1)
+                else:
+                    prof = (ym[prev_h - by :, span] > 0).mean(axis=1)[::-1]
+                idx = first_yellow((prof > 0.5).astype(np.uint8))
+                if idx is not None:
+                    coords.append((s0 + s1) / 2)
+                    dists.append(float(idx))
+
+            if len(dists) < 2:
+                a, b = margin * (prev_w if side in "LR" else prev_h), 0.0
+            else:
+                c = np.array(coords)
+                d = np.array(dists)
+                b, a = np.polyfit(c, d, 1)
+                resid = np.sort(d - (a + b * c))
+                shift = resid[-1]
+                if len(resid) >= 3 and resid[-1] - resid[-2] > 4:
+                    shift = resid[-2]
+                a += max(0.0, float(shift))
+            a += YELLOW_INSET
+
+            if side == "L":
+                return a, b
+            if side == "R":
+                return prev_w - 1 - a, -b
+            if side == "T":
+                return a, b
+            return prev_h - 1 - a, -b
+
+        aL, bL = edge_line("L")
+        aR, bR = edge_line("R")
+        aT, bT = edge_line("T")
+        aB, bB = edge_line("B")
+
+        def intersect(av: float, bv: float, ah: float, bh: float) -> list[float]:
+            x = (av + bv * ah) / (1 - bv * bh)
+            return [x, ah + bh * x]
+
+        snapped = np.array(
+            [
+                intersect(aL, bL, aT, bT),
+                intersect(aR, bR, aT, bT),
+                intersect(aR, bR, aB, bB),
+                intersect(aL, bL, aB, bB),
+            ],
+            dtype=np.float32,
+        )
+        back = cv2.perspectiveTransform(snapped.reshape(-1, 1, 2), np.linalg.inv(matrix))
+        corners = back.reshape(4, 2).astype(np.float32)
+    return corners
+
+
 def extract_card(path: Path, out_dir: Path, debug_dir: Path | None) -> bool:
     data = np.fromfile(path, dtype=np.uint8)  # gère les chemins Windows/accents
     img = cv2.imdecode(data, cv2.IMREAD_COLOR)
@@ -283,22 +446,25 @@ def extract_card(path: Path, out_dir: Path, debug_dir: Path | None) -> bool:
         return False
 
     h, w = img.shape[:2]
-    scale = DETECT_WIDTH / w
-    small = cv2.resize(img, (DETECT_WIDTH, int(h * scale)), interpolation=cv2.INTER_AREA)
 
-    best = pick_best_quad(candidate_quads(small))
-    if best is None:
-        print(f"  [ECHEC] Carte non détectée : {path.name}")
-        return False
-
-    corners = best / scale  # retour aux coordonnées pleine résolution
-
-    # Passe de raffinement : si le premier cadrage contient encore une marge
-    # de slab autour de la carte, on re-détecte dans ce cadrage et on ramène
-    # les coins dans le repère de l'image d'origine (un seul warp final).
-    corners = refine_corners(img, corners)
-    # Ajustement fin : chaque bord est calé sur la frontière carte/fond.
-    corners = snap_edges(img, corners)
+    # Détection primaire : le cadre jaune de la carte (robuste sur cartes
+    # et coques grises). Si aucun cadre jaune franc n'est trouvé, on bascule
+    # sur l'ancienne méthode par chroma/contours (filet de sécurité pour les
+    # cartes atypiques : full-art, cristal, etc.).
+    corners = detect_yellow_quad(img)
+    if corners is not None:
+        corners = snap_yellow_edges(img, corners)
+    else:
+        scale = DETECT_WIDTH / w
+        small = cv2.resize(img, (DETECT_WIDTH, int(h * scale)), interpolation=cv2.INTER_AREA)
+        best = pick_best_quad(candidate_quads(small))
+        if best is None:
+            print(f"  [ECHEC] Carte non détectée : {path.name}")
+            return False
+        corners = best / scale  # retour aux coordonnées pleine résolution
+        # Raffinement puis calage fin par chroma (frontière carte/fond).
+        corners = refine_corners(img, corners)
+        corners = snap_edges(img, corners)
 
     if debug_dir is not None:
         dbg = img.copy()
