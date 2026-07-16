@@ -8,8 +8,9 @@ qualité** dans un dossier de sortie.
 
 - **Entrée** : le dossier `input`, avec vos images (`.webp`, `.png`,
   `.jpg`, `.jpeg`, `.bmp`, `.tif`)
-- **Sortie** : le dossier `output`, avec un fichier `<nom>_carte.png`
-  par image (coins arrondis transparents, comme la vraie carte)
+- **Sortie** : le dossier `output`, avec un fichier `<nom>.png` par image
+  (**même nom** que l'image d'entrée ; coins arrondis transparents, comme
+  la vraie carte)
 
 Aucune connaissance en informatique n'est requise : ce document vous guide
 pas à pas, depuis le téléchargement du projet jusqu'à l'obtention de vos
@@ -177,7 +178,7 @@ Le programme affiche une ligne par image traitée :
 
 ```
 5 image(s) à traiter -> C:\...\output
-  [OK] 001_NeoG.webp -> 001_NeoG_carte.png (1005x1404)
+  [OK] 001_NeoG.webp -> 001_NeoG.png (1005x1404)
   ...
 Terminé sans erreur.
 ```

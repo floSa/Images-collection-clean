@@ -1,7 +1,8 @@
 Ce dossier reçoit automatiquement les cartes extraites.
 
 Pour chaque image du dossier "input", le programme crée ici un fichier
-<nom>_carte.png (carte recadrée, coins arrondis transparents).
+portant le MÊME nom en .png (carte recadrée, coins arrondis transparents).
+Exemple : 009_NeoG.webp  ->  009_NeoG.png
 
 Vous n'avez rien à faire dans ce dossier : il se remplit tout seul au
 lancement de :

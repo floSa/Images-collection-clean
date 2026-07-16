@@ -501,7 +501,7 @@ def extract_card(path: Path, out_dir: Path, debug_dir: Path | None) -> bool:
     card = cv2.cvtColor(card, cv2.COLOR_BGR2BGRA)
     card[:, :, 3] = mask
 
-    out_path = out_dir / f"{path.stem}_carte.png"
+    out_path = out_dir / f"{path.stem}.png"
     ok, buf = cv2.imencode(".png", card, [cv2.IMWRITE_PNG_COMPRESSION, 6])
     if not ok:
         print(f"  [ERREUR] Encodage PNG : {path.name}")
@@ -527,7 +527,7 @@ def main() -> int:
     files = sorted(
         f
         for f in args.src.iterdir()
-        if f.suffix.lower() in INPUT_EXTENSIONS and not f.stem.endswith("_carte")
+        if f.suffix.lower() in INPUT_EXTENSIONS
     )
     if not files:
         print(f"Aucune image trouvée dans {args.src.resolve()}")
