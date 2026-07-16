@@ -1,0 +1,10 @@
+Ce dossier reçoit automatiquement les cartes extraites.
+
+Pour chaque image du dossier "input", le programme crée ici un fichier
+<nom>_carte.png (carte recadrée, coins arrondis transparents).
+
+Vous n'avez rien à faire dans ce dossier : il se remplit tout seul au
+lancement de :
+    uv run python extract_cards.py
+
+(Ce fichier n'est qu'un rappel, vous pouvez le laisser.)

@@ -114,36 +114,54 @@ exactement cette version, automatiquement, à l'étape 2 ci-dessous.
 
 ## 3. Utilisation
 
-### Étape 1 — Ouvrir un terminal dans le dossier du programme
+### Étape 1 — Ouvrir un terminal DANS le bon dossier
 
-Le dossier du programme est celui qui contient `extract_cards.py`.
+C'est **l'étape la plus importante** : presque tous les problèmes viennent
+d'un terminal ouvert au mauvais endroit. Le « bon dossier » est celui qui
+contient le fichier `extract_cards.py` (ainsi que `README.md`, `input`,
+`output`...).
 
-> ⚠️ **Toutes les commandes ci-dessous doivent être lancées depuis ce
-> dossier.** Si le terminal affiche un autre chemin (par exemple
-> `C:\Users\VotreNom>`), les commandes échoueront (`No such file or
-> directory`). Utilisez la méthode ci-dessous plutôt que de taper `cd`
-> à la main : c'est plus sûr, et ça évite les erreurs si le chemin
-> contient des espaces (ex. « Nouveau dossier »).
+**Méthode recommandée (Windows) — sans jamais taper de chemin :**
 
-- **Windows** : ouvrez ce dossier **précis** dans l'Explorateur de
-  fichiers (double-cliquez pour y entrer, vous devez voir
-  `extract_cards.py` dans la liste), faites un clic droit dans le vide
-  (pas sur un fichier) et choisissez **« Ouvrir dans le Terminal »**.
-- **macOS** : clic droit sur le dossier → **Services** → **Nouveau
-  terminal au dossier**.
+1. Ouvrez l'**Explorateur de fichiers** et allez jusqu'au dossier du
+   programme. Vous êtes au bon endroit quand vous **voyez le fichier
+   `extract_cards.py`** dans la liste.
+2. Cliquez **dans une zone vide** de la fenêtre (pas sur un fichier).
+3. **Clic droit** → **« Ouvrir dans le Terminal »**
+   (sur Windows 10 : tapez `cmd` dans la barre d'adresse de l'Explorateur,
+   puis Entrée — ça ouvre un terminal déjà placé dans ce dossier).
 
-Si vous préférez taper `cd` vous-même, mettez le chemin entre
-guillemets dès qu'il contient un espace :
+Un terminal s'ouvre, déjà positionné au bon endroit. Vous n'avez aucun
+chemin à taper : passez directement à l'étape 2.
+
+**Méthode macOS :** clic droit sur le dossier → **Services** → **Nouveau
+terminal au dossier**.
+
+> ✅ **Comment vérifier que vous êtes au bon endroit ?** Le début de ligne
+> du terminal doit se terminer par le nom du dossier du programme
+> (par exemple `...\Images-collection-clean-main>`). S'il affiche juste
+> `C:\Users\VotreNom>`, vous n'êtes **pas** dans le bon dossier : refaites
+> la méthode ci-dessus. Lancer le programme depuis le mauvais dossier
+> donne l'erreur `No such file or directory`.
+
+<details>
+<summary>Si vous tenez à vous déplacer à la main avec <code>cd</code></summary>
+
+Mettez **toujours** le chemin entre guillemets `"..."` : sinon, dès qu'il
+contient un espace (comme « Nouveau dossier »), vous obtenez l'erreur
+`Impossible de trouver un paramètre positionnel...`.
 
 ```powershell
 cd "C:\Users\VotreNom\Desktop\Nouveau dossier\Images-collection-clean-main"
 ```
 
+</details>
+
 ### Étape 2 — Mettre vos images dans `input`
 
-Placez vos scans/photos de cartes gradées dans le dossier `input` (créez-le
-à côté de `extract_cards.py` s'il n'existe pas — le programme le crée
-aussi tout seul au premier lancement).
+Le dossier `input` est déjà présent dans le programme. Placez-y vos
+scans/photos de cartes gradées (il contient un fichier `LISEZ-MOI.txt`
+que vous pouvez ignorer ou supprimer).
 
 ### Étape 3 — Lancer le programme
 

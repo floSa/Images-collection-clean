@@ -1,0 +1,11 @@
+Placez ICI vos scans / photos de cartes gradées à traiter.
+
+Formats acceptés : .webp .png .jpg .jpeg .bmp .tif
+
+Puis lancez le programme depuis le dossier parent :
+    uv run python extract_cards.py
+
+Les cartes extraites apparaîtront dans le dossier "output".
+
+(Ce fichier ne sert que de rappel, vous pouvez le laisser : le programme
+l'ignore.)

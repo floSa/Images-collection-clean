@@ -3,6 +3,11 @@
 __pycache__/
 *.pyc
 
-# Vos scans personnels et les cartes extraites : restent en local uniquement
+# Vos scans personnels et les cartes extraites restent en local uniquement.
+# Les dossiers input/ et output/ sont fournis (vides, avec un guide) pour
+# que l'utilisateur n'ait rien à créer : on ignore leur contenu SAUF le
+# fichier guide LISEZ-MOI.txt.
 /input/*
+!/input/LISEZ-MOI.txt
 /output/*
+!/output/LISEZ-MOI.txt
